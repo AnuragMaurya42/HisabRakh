@@ -9,7 +9,7 @@ const ForgetPassword = () => {
   const handleForget = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/auth/send-reset-otp", { email });
+      await axios.post("https://hisabrakh-backend.onrender.com/api/auth/send-reset-otp", { email });
       alert("OTP sent to your email!");
       navigate("/verify-reset-otp", { state: { email } });
     } catch (error) {

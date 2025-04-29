@@ -10,13 +10,13 @@ const VerifyOtp = () => {
   const handleVerify = async (e) => {
     e.preventDefault();
     try {
-      const verifyRes = await axios.post("http://localhost:5000/api/auth/verify-otp", { 
+      const verifyRes = await axios.post("https://hisabrakh-backend.onrender.com/api/auth/verify-otp", { 
         email: state.email, 
         otp 
       });
 
       if (verifyRes.data.success) {
-        await axios.post("http://localhost:5000/api/auth/register", {
+        await axios.post("https://hisabrakh-backend.onrender.com/api/auth/register", {
           name: state.name,
           email: state.email,
           mobile: state.mobile,

@@ -21,7 +21,7 @@ const MainPage = () => {
           navigate("/login");
           return;
         }
-        const res = await axios.get("http://localhost:5000/api/loans", {
+        const res = await axios.get("https://hisabrakh-backend.onrender.com/api/loans", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setData(res.data);

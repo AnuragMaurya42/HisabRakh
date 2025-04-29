@@ -14,7 +14,7 @@ const VeryfyMail = () => {
     e.preventDefault();
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/verify-otp', { email, otp });
+      const res = await axios.post('https://hisabrakh-backend.onrender.com/api/auth/verify-otp', { email, otp });
 
       setMessage(res.data.message);
       alert("Email verified successfully!");

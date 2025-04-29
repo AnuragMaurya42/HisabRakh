@@ -10,7 +10,7 @@ const VerifyResetOtp = () => {
   const handleVerify = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/auth/verify-otp", { email: state.email, otp });
+      await axios.post("https://hisabrakh-backend.onrender.com/api/auth/verify-otp", { email: state.email, otp });
       alert("✅ OTP verified successfully!");
       navigate("/reset-password", { state: { email: state.email } });
     } catch (error) {

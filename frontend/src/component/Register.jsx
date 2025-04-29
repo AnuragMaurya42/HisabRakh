@@ -16,7 +16,7 @@ const Register = () => {
 
     try {
       // Step 1: Send Email to get OTP
-      await axios.post("http://localhost:5000/api/auth/send-register-otp", { email });
+      await axios.post("https://hisabrakh-backend.onrender.com/api/auth/send-register-otp", { email });
 
       // Step 2: Go to VerifyOtp page, pass user details in navigation state
       navigate("/verify-otp", { state: { name, email, mobile, password } });

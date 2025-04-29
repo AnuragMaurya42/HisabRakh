@@ -15,7 +15,7 @@ const ResetPassword = () => {
     }
 
     try {
-      await axios.post("http://localhost:5000/api/auth/reset-password", { 
+      await axios.post("https://hisabrakh-backend.onrender.com/api/auth/reset-password", { 
         email: state.email, 
         newPassword: password 
       });

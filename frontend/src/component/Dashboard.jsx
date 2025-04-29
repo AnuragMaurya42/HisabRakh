@@ -44,7 +44,7 @@ const Dashboard = () => {
     };
 
     try {
-      const response = await axios.post('http://localhost:5000/api/loans', loanData, {
+      const response = await axios.post('https://hisabrakh-backend.onrender.com/api/loans', loanData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
