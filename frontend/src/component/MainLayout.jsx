@@ -39,6 +39,41 @@ const MainPage = () => {
     fetchData();
   }, [navigate]);
 
+
+
+
+
+
+
+const handleDelete = async (id) => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Unauthorized: Please login again.");
+    navigate("/login");
+    return;
+  }
+
+  try {
+    await axios.delete(`https://hisabrakh-backend.onrender.com/api/loans/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    // Update local state to reflect deletion
+    setData((prevData) => prevData.filter((item) => item._id !== id));
+
+    alert("Record deleted successfully!");
+    console.log(`Deleted record with ID: ${id}`);
+  } catch (error) {
+    console.error("Delete failed:", error.response || error.message);
+    alert("Failed to delete record. Please try again.");
+  }
+};
+
+
+
+
+  
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -240,6 +275,23 @@ const MainPage = () => {
                   color: "#f70000",
                 }}>
                   <span>🧾 Total Due: ₹{totalAmount}</span>
+
+                    {/* ✅ Delete Button */}
+          <button
+            onClick={() => handleDelete(item._id)}
+            style={{
+              marginTop: "8px",
+              padding: "6px 12px",
+              backgroundColor: "#e74c3c",
+              color: "#fff",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Delete
+          </button>
                 </p>
               </div>
             </div>
