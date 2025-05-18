@@ -25,6 +25,7 @@ router.post('/', authMiddleware, async (req, res) => {
       date,
       user: req.user.id,
     });
+    //hiii
 
     const savedRecord = await newRecord.save();
     res.json(savedRecord);
