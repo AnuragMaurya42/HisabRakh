@@ -35,7 +35,7 @@ router.post('/', authMiddleware, async (req, res) => {
 
 
 // 🔥 Delete a specific record by ID
-router.delete('/api/loans/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   console.log('Delete record request received');
   console.log('Record ID:', req.params.id);
   try {
