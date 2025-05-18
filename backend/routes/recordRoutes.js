@@ -33,4 +33,23 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+
+// 🔥 Delete a specific record by ID
+router.delete('/api/loans/:id', authMiddleware, async (req, res) => {
+  console.log('Delete record request received');
+  console.log('Record ID:', req.params.id);
+  try {
+    const record = await Record.findOne({ _id: req.params.id, user: req.user.id });
+
+    if (!record) {
+      return res.status(404).json({ message: 'Record not found or unauthorized' });
+    }
+
+    await Record.deleteOne({ _id: req.params.id });
+    res.json({ message: 'Record deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
