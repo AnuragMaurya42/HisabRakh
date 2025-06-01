@@ -78,41 +78,6 @@ const MainPage = () => {
     setRecordToDelete(null);
   };
 
-
-
-
-
-
-
-const handleDelete = async (id) => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    alert("Unauthorized: Please login again.");
-    navigate("/login");
-    return;
-  }
-
-  try {
-    await axios.delete(`https://hisabrakh-backend.onrender.com/api/loans/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    // Update local state to reflect deletion
-    setData((prevData) => prevData.filter((item) => item._id !== id));
-
-    alert("Record deleted successfully!");
-    console.log(`Deleted record with ID: ${id}`);
-  } catch (error) {
-    console.error("Delete failed:", error.response || error.message);
-    alert("Failed to delete record. Please try again.");
-  }
-};
-
-
-
-
-  
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -372,11 +337,16 @@ const handleDelete = async (id) => {
                   color: "#d32f2f",
                   display: "flex",
                   justifyContent: "space-between",
-                  fontSize: "14px",
-                  color: "#f70000",
-                }}>
-                  <span>🧾 Total Due: ₹{totalAmount}</span>
-                </p>
+                  alignItems: "center",
+                }}
+              >
+                <span>🧾 Total Due: ₹{totalAmount}</span>
+                <button
+                  className="delete-btn"
+                  onClick={() => handleOpenDeleteModal(item._id)}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           );
@@ -410,7 +380,7 @@ const loadingStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  height: "200vh",
+  height: "100vh",
   backgroundColor: "#f0f4ff",
 };
 
@@ -441,7 +411,7 @@ const modalOverlayStyle = {
 };
 
 const modalContentStyle = {
-  backgroundColor: "#8ddcfa",
+  backgroundColor: "#fff",
   padding: "20px",
   borderRadius: "8px",
   width: "90%",
