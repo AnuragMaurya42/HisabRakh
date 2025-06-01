@@ -1,32 +1,33 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; // ✅ Navigation
+import { useNavigate } from "react-router-dom";
 
 const MainPage = () => {
   const navigate = useNavigate();
-
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("date-desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // New state for handling the delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
-        console.log(token);
         if (!token) {
-          console.log("token nahi le paya");
           navigate("/login");
           return;
         }
-        const res = await axios.get("https://hisabrakh-backend.onrender.com/api/loans", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(
+          "https://hisabrakh-backend.onrender.com/api/loans",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setData(res.data);
       } catch (err) {
-        console.error(err);
         if (err.response && err.response.status === 401) {
           navigate("/login");
         } else {
@@ -38,6 +39,44 @@ const MainPage = () => {
     };
     fetchData();
   }, [navigate]);
+
+  // Opens the modal and saves which record to delete.
+  const handleOpenDeleteModal = (id) => {
+    setRecordToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  // Performs the delete operation after confirmation.
+  const handleConfirmDelete = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Unauthorized: Please login again.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `https://hisabrakh-backend.onrender.com/api/loans/${recordToDelete}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setData((prevData) =>
+        prevData.filter((item) => item._id !== recordToDelete)
+      );
+      alert("Record deleted successfully!");
+    } catch (error) {
+      alert("Failed to delete record. Please try again.");
+    } finally {
+      setShowDeleteModal(false);
+      setRecordToDelete(null);
+    }
+  };
+
+  // Closes the modal cancellation.
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setRecordToDelete(null);
+  };
 
 
 
@@ -84,27 +123,33 @@ const handleDelete = async (id) => {
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     const day = String(date.getDate()).padStart(2, "0");
-    const monthNames = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
-    const month = monthNames[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+    const month = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ][date.getMonth()];
+    return `${day}-${month}-${date.getFullYear()}`;
   };
 
   const calculateDaysElapsed = (dateStr) => {
     const startDate = new Date(dateStr);
     const currentDate = new Date();
-    const diffTime = Math.abs(currentDate - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return Math.ceil(Math.abs(currentDate - startDate) / (1000 * 60 * 60 * 24));
   };
 
   const calculateTotalAmount = (amount, loanPercentage, daysElapsed) => {
-    const dailyRate = loanPercentage / 30; // Assuming monthly % divided over 30 days
-    const totalInterest = (amount * dailyRate * daysElapsed) / 100;
-    return (amount + totalInterest).toFixed(2);
+    const dailyRate = loanPercentage / 30;
+    const interest = (amount * dailyRate * daysElapsed) / 100;
+    return (amount + interest).toFixed(2);
   };
 
   const filteredData = data.filter(
@@ -123,32 +168,25 @@ const handleDelete = async (id) => {
     return 0;
   });
 
-  if (loading) return <div style={loadingStyle}>Loading...</div>;
+  if (loading)
+    return (
+      <div style={loadingStyle}>
+        <img
+          src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif"
+          alt="Loading..."
+          style={{ width: "150px", height: "150px" }}
+        />
+      </div>
+    );
   if (error) return <div style={errorStyle}>{error}</div>;
 
   return (
     <div style={containerStyle}>
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        input:focus, select:focus {
-          border-color: #3498db;
-          box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
-        }
-        .card {
-          transition: all 0.3s ease-in-out;
-        }
-        .card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-        }
         .card-container {
           display: grid;
           grid-template-columns: repeat(1, 1fr);
-          gap: 5px;
-          margin-top: 0px;
+          gap: 16px;
         }
         @media (min-width: 600px) {
           .card-container {
@@ -160,37 +198,120 @@ const handleDelete = async (id) => {
             grid-template-columns: repeat(3, 1fr);
           }
         }
+        .top-bar {
+          position: sticky;
+          top: 0;
+          background: #fff;
+          z-index: 10;
+          padding: 10px 10px;
+          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-radius: 0 0 12px 12px;
+        }
+        .card {
+          background-color: #ffffff;
+          border-radius: 12px;
+          padding: 3px;
+          box-shadow: 0 8px 16px rgba(63, 81, 181, 0.12);
+          animation: fadeInUp 0.6s ease forwards;
+          opacity: 0;
+          transform: translateY(20px);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          height: 100%;
+        }
+        @keyframes fadeInUp {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        button.delete-btn {
+          background-color: #e53935;
+          color: white;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+          transition: background-color 0.3s ease;
+          align-self: flex-end;
+          margin-top: 12px;
+          user-select: none;
+        }
+        button.delete-btn:active {
+          background-color: #b71c1c;
+        }
+        button.logout-btn {
+          padding: 8px 16px;
+          background-color: #3949ab;
+          color: #fff;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 700;
+          user-select: none;
+          transition: background-color 0.3s ease;
+        }
+        button.logout-btn:active {
+          background-color: #1a237e;
+        }
+        input,
+        select {
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1.5px solid #90caf9;
+          font-size: 15px;
+          outline-color: #3f51b5;
+          width: 100%;
+          box-sizing: border-box;
+          font-weight: 500;
+        }
+        input::placeholder {
+          color: #9e9e9e;
+        }
+        .input-group {
+          display: flex;
+          gap: 12px;
+          margin: 10px 0;
+          flex-wrap: wrap;
+        }
+        .input-group > * {
+          flex: 1 1 200px;
+        }
       `}</style>
 
-      <div style={topBarStyle}>
-        <h2 style={headingStyle}>📊 Loan Dashboard</h2>
-        <button style={logoutButtonStyle} onClick={handleLogout}>🚪 Logout</button>
+      <div className="top-bar">
+        <h2 style={{ margin: 0, color: "#3f51b5" }}>📊 Loan Dashboard</h2>
+        <button className="logout-btn" onClick={handleLogout}>
+          🚪 Logout
+        </button>
       </div>
 
-      <div style={inputContainerStyle}>
+      <div className="input-group">
         <input
           type="text"
-          placeholder="Search..."
+          placeholder="Search by name or amount..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={inputStyle}
         />
-
         <select
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
-          style={dropdownStyle}
         >
           <option value="date-desc">Date (Newest)</option>
           <option value="date-asc">Date (Oldest)</option>
           <option value="name-asc">Name (A-Z)</option>
           <option value="name-desc">Name (Z-A)</option>
-          <option value="amount-asc">Amount (Low)</option>
-          <option value="amount-desc">Amount (High)</option>
+          <option value="amount-asc">Amount (Low to High)</option>
+          <option value="amount-desc">Amount (High to Low)</option>
         </select>
       </div>
 
-      <div className="card-container" style={cardContainerStyle}>
+      <div className="card-container">
         {sortedData.map((item) => {
           const daysElapsed = calculateDaysElapsed(item.date);
           const monthsElapsed = Math.floor(daysElapsed / 30);
@@ -199,204 +320,153 @@ const handleDelete = async (id) => {
             item.loanPercentage,
             daysElapsed
           );
-
           return (
-            <div
-              key={item._id || item.id}
-              className="card"
-              style={{
-                marginTop: 0,
-                backgroundColor: "#fff",
-                borderRadius: "4px",
-                padding: "5px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                marginBottom: "3px",
-                fontFamily: "Arial, sans-serif",
-              }}
-            >
+            <div key={item._id} className="card">
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: "0px",
                 }}
               >
                 <div>
-                  <h3 style={{
-                    margin: "0 0 4px 0",
-                    fontSize: "18px",
-                    color: "#0e2aff",
-                  }}>
-                    {item.name}
-                  </h3>
-                  <p style={{ margin: 0, color: "#666", fontSize: "14px" }}>
+                  <h3 style={{ margin: 0, color: "#303f9f" }}>{item.name}</h3>
+                  <p style={{ margin: "4px 0", fontSize: "14px", color: "#666" }}>
                     {item.address}
                   </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{
-                    margin: 0,
-                    fontWeight: "bold",
-                    color: "#1aa502",
-                    fontSize: "16px",
-                  }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontWeight: "bold",
+                      color: "#388e3c",
+                      fontSize: "18px",
+                    }}
+                  >
                     ₹{item.amount}
                   </p>
-                  <p style={{
-                    margin: 0,
-                    color: "#333333",
-                    fontSize: "13px",
-                  }}>
-                    {item.loanPercentage}% per month (~₹
+                  <p style={{ margin: 0, fontSize: "12px", color: "#757575" }}>
+                    {item.loanPercentage}% (~₹
                     {((item.amount * item.loanPercentage) / 100).toFixed(2)})
                   </p>
                 </div>
               </div>
-
-              <p style={{
-                margin: "8px 0",
-                color: "#313131",
-                fontSize: "14px"
-              }}>
-                📅 {formatDate(item.date)} (Duration: {monthsElapsed} months {daysElapsed % 30} days)
+              <p
+                style={{
+                  fontSize: "14px",
+                  margin: "12px 0",
+                  color: "#555",
+                  fontWeight: "500",
+                }}
+              >
+                📅 {formatDate(item.date)} — Duration: {monthsElapsed} months{" "}
+                {daysElapsed % 30} days
               </p>
-
-              <div style={{
-                backgroundColor: "#f9f9f9",
-                padding: "8px",
-                borderRadius: "4px",
-              }}>
-                <p style={{
-                  margin: 0,
+              <div
+                style={{
+                  backgroundColor: "#e3f2fd",
+                  padding: "3px",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  color: "#d32f2f",
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: "14px",
                   color: "#f70000",
                 }}>
                   <span>🧾 Total Due: ₹{totalAmount}</span>
-
-                    {/* ✅ Delete Button */}
-          <button
-            onClick={() => handleDelete(item._id)}
-            style={{
-              marginTop: "8px",
-              padding: "6px 12px",
-              backgroundColor: "#e74c3c",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            Delete
-          </button>
                 </p>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <p style={{ fontSize: "16px", margin: "0 0 20px 0" }}>
+              Are you sure you want to delete this record?
+            </p>
+            <div style={{ display: "flex", justifyContent: "space-around" }}>
+              <button style={modalDeleteButtonStyle} onClick={handleConfirmDelete}>
+                Delete
+              </button>
+              <button style={modalCancelButtonStyle} onClick={handleCancelDelete}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // Styles
-const containerStyle = {
-  minHeight: "100vh",
+const loadingStyle = {
   display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  background: "linear-gradient(to right, #8e44ad, #3498db)",
-  padding: "10px",
-  animation: "fadeIn 0.8s ease-out",
-};
-
-const topBarStyle = {
-  width: "100%",
-  maxWidth: "1200px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: "10px",
-};
-
-const logoutButtonStyle = {
-  padding: "10px 20px",
-  backgroundColor: "#ff7675",
-  color: "#fff",
-  border: "none",
-  borderRadius: "20px",
-  fontSize: "16px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  transition: "all 0.3s ease",
-};
-
-const inputContainerStyle = {
-  width: "100%",
-  maxWidth: "600px",
-  display: "flex",
-  flexDirection: "row",
   alignItems: "center",
   justifyContent: "center",
-  gap: "8px",
-  marginBottom: "20px",
-  padding: "10px",
-  flexWrap: "wrap",
-  position: "sticky",
-  top: "0",
-  background: "linear-gradient(to right, #8e44ad, #3498db)",
-  zIndex: 100,
-};
-
-const inputStyle = {
-  flex: "2",
-  minWidth: "150px",
-  padding: "8px 12px",
-  fontSize: "14px",
-  borderRadius: "20px",
-  border: "1px solid #ddd",
-  outline: "none",
-  transition: "all 0.3s ease",
-};
-
-const dropdownStyle = {
-  flex: "1",
-  minWidth: "100px",
-  padding: "8px 12px",
-  fontSize: "14px",
-  borderRadius: "20px",
-  border: "1px solid #ddd",
-  outline: "none",
-  transition: "all 0.3s ease",
-};
-
-const headingStyle = {
-  color: "#fff",
-  fontSize: "32px",
-  fontWeight: "700",
-  marginBottom: "10px",
-};
-
-const cardContainerStyle = {
-  width: "100%",
-  maxWidth: "1200px",
-};
-
-const loadingStyle = {
-  fontSize: "24px",
-  fontWeight: "bold",
-  textAlign: "center",
-  marginTop: "20px",
+  height: "200vh",
+  backgroundColor: "#f0f4ff",
 };
 
 const errorStyle = {
-  fontSize: "20px",
   color: "red",
   textAlign: "center",
-  marginTop: "20px",
+  marginTop: "50px",
+};
+
+const containerStyle = {
+  minHeight: "100vh",
+  background: "#f0f4ff",
+  padding: "3px",
+  fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+};
+
+const modalOverlayStyle = {
+  position: "fixed",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000,
+};
+
+const modalContentStyle = {
+  backgroundColor: "#8ddcfa",
+  padding: "20px",
+  borderRadius: "8px",
+  width: "90%",
+  maxWidth: "400px",
+  textAlign: "center",
+};
+
+const modalDeleteButtonStyle = {
+  backgroundColor: "#e53935",
+  color: "#fff",
+  border: "none",
+  padding: "10px 20px",
+  borderRadius: "6px",
+  cursor: "pointer",
+  fontWeight: "600",
+};
+
+const modalCancelButtonStyle = {
+  backgroundColor: "#757575",
+  color: "#fff",
+  border: "none",
+  padding: "10px 20px",
+  borderRadius: "6px",
+  cursor: "pointer",
+  fontWeight: "600",
 };
 
 export default MainPage;
